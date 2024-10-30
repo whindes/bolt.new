@@ -58,7 +58,7 @@ We're looking for dedicated contributors to help maintain and grow this project.
 ### 🔄 Initial Setup
 1. Clone the repository:
 ```bash
-git clone https://github.com/coleam00/bolt.new-any-llm.git
+git clone https://github.com/whindes/bolt.new
 ```
 
 2. Install dependencies:
