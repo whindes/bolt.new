@@ -28,7 +28,7 @@ const ModelSelector = ({ model, setModel, modelList, providerList }) => {
   const [provider, setProvider] = useState(DEFAULT_PROVIDER);
   return (
     <div className="mb-2">
-      <select 
+      <select
         value={provider}
         onChange={(e) => {
           setProvider(e.target.value);
@@ -42,9 +42,12 @@ const ModelSelector = ({ model, setModel, modelList, providerList }) => {
             {provider}
           </option>
         ))}
-          <option key="Ollama" value="Ollama">
-            Ollama
-          </option>        
+        <option key="Ollama" value="Ollama">
+          Ollama
+        </option>
+        <option key="OpenAILike" value="OpenAILike">
+          OpenAILike
+        </option>
       </select>
       <select
         value={model}
@@ -116,7 +119,7 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
         data-chat-visible={showChat}
       >
         <ClientOnly>{() => <Menu />}</ClientOnly>
-        <div ref={scrollRef} className="flex overflow-scroll w-full h-full">
+        <div ref={scrollRef} className="flex overflow-y-auto w-full h-full">
           <div className={classNames(styles.Chat, 'flex flex-col flex-grow min-w-[var(--chat-min-width)] h-full')}>
             {!chatStarted && (
               <div id="intro" className="mt-[26vh] max-w-chat mx-auto">
