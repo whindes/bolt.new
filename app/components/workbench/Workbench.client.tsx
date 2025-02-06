@@ -17,6 +17,8 @@ import { renderLogger } from '~/utils/logger';
 import { EditorPanel } from './EditorPanel';
 import { Preview } from './Preview';
 import useViewport from '~/lib/hooks';
+import Cookies from 'js-cookie';
+import { chatMetadata, useChatHistory } from '~/lib/persistence';
 
 interface WorkspaceProps {
   chatStarted?: boolean;
@@ -65,6 +67,8 @@ export const Workbench = memo(({ chatStarted, isStreaming }: WorkspaceProps) => 
   const unsavedFiles = useStore(workbenchStore.unsavedFiles);
   const files = useStore(workbenchStore.files);
   const selectedView = useStore(workbenchStore.currentView);
+  const metadata = useStore(chatMetadata);
+  const { updateChatMestaData } = useChatHistory();
 
   const isSmallViewport = useViewport(1024);
 
@@ -170,31 +174,59 @@ export const Workbench = memo(({ chatStarted, isStreaming }: WorkspaceProps) => 
                     <PanelHeaderButton
                       className="mr-1 text-sm"
                       onClick={() => {
-                        const repoName = prompt(
-                          'Please enter a name for your new GitHub repository:',
-                          'bolt-generated-project',
-                        );
+                        let repoName = metadata?.gitUrl?.split('/').slice(-1)[0]?.replace('.git', '') || null;
+                        let repoConfirmed: boolean = true;
+
+                        if (repoName) {
+                          repoConfirmed = confirm(`Do you want to push to the repository ${repoName}?`);
+                        }
+
+                        if (!repoName || !repoConfirmed) {
+                          repoName = prompt(
+                            'Please enter a name for your new GitHub repository:',
+                            'bolt-generated-project',
+                          );
+                        } else {
+                        }
 
                         if (!repoName) {
                           alert('Repository name is required. Push to GitHub cancelled.');
                           return;
                         }
 
-                        const githubUsername = prompt('Please enter your GitHub username:');
+                        let githubUsername = Cookies.get('githubUsername');
+                        let githubToken = Cookies.get('githubToken');
 
-                        if (!githubUsername) {
-                          alert('GitHub username is required. Push to GitHub cancelled.');
-                          return;
+                        if (!githubUsername || !githubToken) {
+                          const usernameInput = prompt('Please enter your GitHub username:');
+                          const tokenInput = prompt('Please enter your GitHub personal access token:');
+
+                          if (!usernameInput || !tokenInput) {
+                            alert('GitHub username and token are required. Push to GitHub cancelled.');
+                            return;
+                          }
+
+                          githubUsername = usernameInput;
+                          githubToken = tokenInput;
+
+                          Cookies.set('githubUsername', usernameInput);
+                          Cookies.set('githubToken', tokenInput);
+                          Cookies.set(
+                            'git:github.com',
+                            JSON.stringify({ username: tokenInput, password: 'x-oauth-basic' }),
+                          );
                         }
 
-                        const githubToken = prompt('Please enter your GitHub personal access token:');
+                        const commitMessage =
+                          prompt('Please enter a commit message:', 'Initial commit') || 'Initial commit';
+                        workbenchStore.pushToGitHub(repoName, commitMessage, githubUsername, githubToken);
 
-                        if (!githubToken) {
-                          alert('GitHub token is required. Push to GitHub cancelled.');
-                          return;
+                        if (!metadata?.gitUrl) {
+                          updateChatMestaData({
+                            ...(metadata || {}),
+                            gitUrl: `https://github.com/${githubUsername}/${repoName}.git`,
+                          });
                         }
-
-                        workbenchStore.pushToGitHub(repoName, githubUsername, githubToken);
                       }}
                     >
                       <div className="i-ph:github-logo" />
